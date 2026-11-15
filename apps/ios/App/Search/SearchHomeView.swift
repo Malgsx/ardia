@@ -132,6 +132,7 @@ struct StartSpacePage: View {
   let space: SyncedProfile
   let spaces: [SyncedProfile]
   @Environment(AppModel.self) private var app
+  @Environment(\.screenLayout) private var screenLayout
 
   var body: some View {
     let switcherY = geometry.container.height * TabsLayout.startSwitcherRatio
@@ -142,6 +143,7 @@ struct StartSpacePage: View {
       if !space.pinned.tiles.isEmpty {
         PinnedTiles(tiles: space.pinned.tiles) { url, title in app.openPinned(url: url, title: title) }
           .padding(.horizontal, geometry.safeSide + TabsLayout.tileSide)
+          .frame(maxWidth: screenLayout.isWide ? DuoLayout.startMaxWidth : .infinity)
           .frame(width: geometry.container.width)
           .offset(y: switcherY + TabsLayout.startTilesGap)
       }

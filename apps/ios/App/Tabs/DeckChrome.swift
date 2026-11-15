@@ -11,8 +11,11 @@ struct DeckHeader: View {
   let closeAll: () -> Void
   @Environment(AppModel.self) private var app
   @Environment(\.screenLayout) private var screenLayout
+  @Environment(\.windowControls) private var windowControls
 
   var body: some View {
+    let side = geometry.safeSide + TabsLayout.headerSide
+    let rowTop = geometry.safeTop + TabsLayout.headerCenter - TabsLayout.headerCircle / 2
     HStack(spacing: TabsLayout.barGap) {
       SpaceSwitcher(spaces: app.spaces, current: app.currentSpace) { app.switchSpace(to: $0) }
       Spacer(minLength: TabsLayout.barGap)
@@ -24,7 +27,8 @@ struct DeckHeader: View {
         DeckMoreMenu(hasTabs: hasTabs, closeAll: closeAll)
       }
     }
-    .padding(.horizontal, geometry.safeSide + TabsLayout.headerSide)
+    .padding(.leading, side + windowControls.leadingReserve(fromX: side, top: rowTop))
+    .padding(.trailing, side)
     .frame(width: geometry.container.width)
     .position(x: geometry.container.width / 2, y: geometry.safeTop + TabsLayout.headerCenter)
     .animation(Motion.snappy, value: privateCount > 0)

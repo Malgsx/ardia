@@ -75,9 +75,16 @@ nonisolated struct ScreenSpace: Equatable, Sendable {
 
   var size: CGSize = .zero
   var safeInsets = EdgeInsets()
+  var corners = RectangleCornerInsets()
   var divisions: [CGRect] = []
   var hinge = Hinge.none
   var verticalBarEdge: HorizontalEdge?
+
+  var windowControls: WindowControls {
+    let leading = corners.topLeading
+    guard leading.width > corners.topTrailing.width else { return WindowControls() }
+    return WindowControls(size: leading)
+  }
 
   var oneSidedEdge: HorizontalEdge? {
     let leading = safeInsets.leading
@@ -93,18 +100,36 @@ nonisolated struct ScreenSpace: Equatable, Sendable {
   }
 }
 
+nonisolated struct WindowControls: Equatable, Sendable {
+  var size = CGSize.zero
+
+  static let gap: CGFloat = 6
+
+  func leadingReserve(fromX x: CGFloat, top: CGFloat) -> CGFloat {
+    guard size.height > top else { return 0 }
+    return max(size.width + Self.gap - x, 0)
+  }
+
+  func topReserve(fromY y: CGFloat, leading: CGFloat) -> CGFloat {
+    guard size.width > leading else { return 0 }
+    return max(size.height - y, 0)
+  }
+}
+
 extension EnvironmentValues {
   @Entry var screenLayout = ScreenLayout.phone
+  @Entry var windowControls = WindowControls()
 }
 
 extension View {
-  func readsScreenLayout(_ layout: Binding<ScreenLayout>) -> some View {
-    modifier(ScreenLayoutReader(layout: layout))
+  func readsScreenLayout(_ layout: Binding<ScreenLayout>, windowControls: Binding<WindowControls>) -> some View {
+    modifier(ScreenLayoutReader(layout: layout, windowControls: windowControls))
   }
 }
 
 private struct ScreenLayoutReader: ViewModifier {
   @Binding var layout: ScreenLayout
+  @Binding var windowControls: WindowControls
   @State private var space = ScreenSpace()
 
   func body(content: Content) -> some View {
@@ -122,6 +147,8 @@ private struct ScreenLayoutReader: ViewModifier {
         let next = DuoCanvas.forcedLayout(for: space) ?? ScreenLayout.resolve(space)
         DuoLog.space(space, next)
         if next != layout { layout = next }
+        let controls = space.windowControls
+        if controls != windowControls { windowControls = controls }
       }
   }
 }
@@ -135,12 +162,13 @@ private struct GeometryProbe: ViewModifier {
         ProbedGeometry(
           size: proxy.size,
           safeInsets: proxy.safeAreaInsets,
+          corners: proxy.containerCornerInsets,
           divisions: proxy.reservedRegions(kind: .division, layoutDirectionBehavior: .fixed).filter(\.isActive).map(\.frame)
         )
       } action: { apply($0) }
     } else {
       content.onGeometryChange(for: ProbedGeometry.self) { proxy in
-        ProbedGeometry(size: proxy.size, safeInsets: proxy.safeAreaInsets, divisions: [])
+        ProbedGeometry(size: proxy.size, safeInsets: proxy.safeAreaInsets, corners: proxy.containerCornerInsets, divisions: [])
       } action: { apply($0) }
     }
   }
@@ -148,6 +176,7 @@ private struct GeometryProbe: ViewModifier {
   private func apply(_ geometry: ProbedGeometry) {
     space.size = geometry.size
     space.safeInsets = geometry.safeInsets
+    space.corners = geometry.corners
     space.divisions = geometry.divisions
   }
 }
@@ -155,6 +184,7 @@ private struct GeometryProbe: ViewModifier {
 nonisolated private struct ProbedGeometry: Equatable {
   var size: CGSize
   var safeInsets: EdgeInsets
+  var corners: RectangleCornerInsets
   var divisions: [CGRect]
 }
 
@@ -242,7 +272,7 @@ enum DuoLog {
   static func space(_ space: ScreenSpace, _ layout: ScreenLayout) {
     #if DEBUG
     let insets = space.safeInsets
-    logger.notice("space size=\(space.size.width, privacy: .public)x\(space.size.height, privacy: .public) insets t\(insets.top, privacy: .public) l\(insets.leading, privacy: .public) b\(insets.bottom, privacy: .public) r\(insets.trailing, privacy: .public) hinge=\(String(describing: space.hinge), privacy: .public) bar=\(String(describing: space.verticalBarEdge), privacy: .public) divisions=\(String(describing: space.divisions), privacy: .public) layout=\(String(describing: layout), privacy: .public)")
+    logger.notice("space size=\(space.size.width, privacy: .public)x\(space.size.height, privacy: .public) insets t\(insets.top, privacy: .public) l\(insets.leading, privacy: .public) b\(insets.bottom, privacy: .public) r\(insets.trailing, privacy: .public) corners=\(String(describing: space.corners), privacy: .public) hinge=\(String(describing: space.hinge), privacy: .public) bar=\(String(describing: space.verticalBarEdge), privacy: .public) divisions=\(String(describing: space.divisions), privacy: .public) layout=\(String(describing: layout), privacy: .public)")
     #endif
   }
 }

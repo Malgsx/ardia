@@ -22,6 +22,7 @@ struct CommandBarFrame: ViewModifier {
   func body(content: Content) -> some View {
     if let placement {
       content
+        .frame(maxWidth: DuoLayout.commandMaxWidth)
         .padding(.horizontal, DuoLayout.commandSide)
         .padding(.top, placement.top)
         .scaleEffect(isUp || reduceMotion ? 1 : 0.96, anchor: .top)

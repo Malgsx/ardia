@@ -14,6 +14,7 @@ struct DuoSidebar: View {
 
   @Environment(AppModel.self) private var app
   @Environment(\.profileLook) private var look
+  @Environment(\.windowControls) private var windowControls
   @State private var page: String?
   @State private var isConfirmingCloseAll = false
 
@@ -84,7 +85,13 @@ struct DuoSidebar: View {
     .padding(.leading, DuoLayout.sidebarPadding + 14)
     .padding(.trailing, DuoLayout.sidebarPadding)
     .frame(height: DuoLayout.sidebarHeaderHeight)
-    .padding(.top, style == .overlay ? DuoLayout.sidebarHeaderTop : DuoLayout.panelTop)
+    .padding(.top, style == .overlay ? overlayHeaderTop : DuoLayout.panelTop)
+  }
+
+  private var overlayHeaderTop: CGFloat {
+    let headerSlack = (DuoLayout.sidebarHeaderHeight - BrowseLayout.hitTarget) / 2
+    let belowControls = windowControls.topReserve(fromY: DuoLayout.cardInset + headerSlack, leading: DuoLayout.cardInset + DuoLayout.sidebarPadding)
+    return max(DuoLayout.sidebarHeaderTop, belowControls)
   }
 
   @ViewBuilder

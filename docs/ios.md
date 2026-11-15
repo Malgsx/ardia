@@ -24,7 +24,7 @@ apps/ios/
   scripts/asc.mjs              App Store Connect client for the TestFlight release
 ```
 
-Targets: iOS 27, iPhone only, Swift 6 with strict concurrency. The app target defaults to MainActor isolation.
+Targets: iOS 27, iPhone and iPad, Swift 6 with strict concurrency. The app target defaults to MainActor isolation.
 
 ## Code shared with the Mac
 
@@ -189,7 +189,7 @@ sizes, copy), on Apple's controls, in the Mac's colours:
   device ("Tab from MacBook Pro").
 - **iPhone Duo and wide windows.** `RootView` reads the space it is given into a `ScreenLayout` (`App/Duo`), in the
   environment as `screenLayout`: `phone`, `column` (a side inset on one edge only, where the system puts the vertical
-  status bar: the closed Duo's sensor edge), `wide` (a window at least 600 pt both ways: the open Duo, later the iPad)
+  status bar: the closed Duo's sensor edge), `wide` (a window at least 600 pt both ways: the open Duo and the iPad)
   and `split` (the hinge half open with a horizontal division band). It comes from the system, never the device
   model: the safe area, `UITraitCollection.verticalBarEdge`, SwiftUI's `onHingeChange` (`DeviceHinge.status`) and the
   `.division` reserved regions (`GeometryProxy.reservedRegions`), all iOS 27.1. The probe ignores the keyboard, so
@@ -219,6 +219,13 @@ sizes, copy), on Apple's controls, in the Mac's colours:
     dimmed page (`CommandBarPlacement` in `SearchTrayHost`), the same `SearchTray` and model.
   - **Half open (`split`).** The page card sits above the fold with the toolbar's buttons (no address); below the
     fold, the space switcher and `···`, the address and the tab list, with page dots.
+  - **iPad.** The app is universal (`TARGETED_DEVICE_FAMILY` 1,2, all four orientations on iPad) and follows its
+    window, never the device: a window at least 600 pt both ways is `wide`, and a narrower one (Split View, a small
+    window) is `phone`. A resizable window carries the system's window controls in its top leading corner;
+    `ScreenSpace.windowControls` reads their size from `GeometryProxy.containerCornerInsets` (in the environment as
+    `windowControls`, empty when the window fills the screen), and the toolbar's buttons, the sidebar's header, the
+    deck's header and the top of a `phone` page step clear of them. On a `wide` start screen the tiles and the bar
+    keep the open Duo's width (`DuoLayout.startMaxWidth`) and the command bar its own (`commandMaxWidth`), centred.
 - **Blocking.** Ads, trackers and cookie banners: seed rules plus EasyList, EasyPrivacy and the EasyList Cookie List
   converted on device, and a reject-all script for consent platforms; off per site from the page menu.
 - **System.** Widgets (search, the Mac's tabs, Lock Screen), Control Center controls, App Intents and Siri phrases,
@@ -242,7 +249,7 @@ starts in that space. Captures can be driven without touch:
 `about`), `-ArdiaOpenSheet history|bookmarks|downloads` and `-ArdiaNoSitePermissions` (demo mode otherwise seeds
 three allowed sites). `-ArdiaDeckQuery <text>` types into the closed Duo's deck search. `-ArdiaDuoCanvas open|half`
 (DEBUG) draws the app at the open Duo's 669 by 951 pt inside a larger screen, open or half open, for an iPad
-simulator built with `TARGETED_DEVICE_FAMILY=1,2` on the `xcodebuild` command line (never in the project). The Duo
+simulator. The Duo
 simulator itself folds without a person: the `agent-device` `fold closed|half-open|open` command, then
 `orientation landscape-left` for the portrait open window and `orientation portrait` once closed again.
 Motion captures: `-BrowsePagerFreeze <fraction>` holds a tab swipe part way (negative swipes toward the

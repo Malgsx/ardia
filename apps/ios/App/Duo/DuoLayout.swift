@@ -39,6 +39,8 @@ nonisolated enum DuoLayout {
 
   static let commandTop: CGFloat = 127
   static let commandSide: CGFloat = 27
+  static let commandMaxWidth: CGFloat = 615
+  static let startMaxWidth: CGFloat = 669
   static let commandMaxHeight: CGFloat = 484
   static let commandAboveKeyboard: CGFloat = 24
 

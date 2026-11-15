@@ -15,6 +15,7 @@ struct BrowsingView: View {
   @State private var pageSpan = PageSpan(width: 402, safeSide: 0)
   @State private var storedCover: StoredCover?
   @Environment(\.screenLayout) private var screenLayout
+  @Environment(\.windowControls) private var windowControls
 
   var body: some View {
     @Bindable var browse = app.browse
@@ -46,7 +47,7 @@ struct BrowsingView: View {
     }
     .onGeometryChange(for: PageSpan.self) { proxy in
       let insets = proxy.safeAreaInsets
-      return PageSpan(width: proxy.size.width + insets.leading + insets.trailing, safeSide: max(insets.leading, insets.trailing))
+      return PageSpan(width: proxy.size.width + insets.leading + insets.trailing, safeSide: max(insets.leading, insets.trailing), safeTop: insets.top)
     } action: { pageSpan = $0 }
     .modifier(PageRequestAlert(page: currentWebPage))
     .sheet(isPresented: $browse.isToolbarPresented) {
@@ -170,7 +171,7 @@ struct BrowsingView: View {
         tab: tab,
         cover: cover(for: tab),
         swipeMode: app.preferences.swipeNavigation,
-        topInset: screenLayout.isWide || screenLayout.fold != nil ? DuoLayout.toolbarClearance : 0,
+        topInset: topClearance,
         bottomInset: screenLayout == .phone ? BrowseLayout.barHeight : 0,
         onTone: { id, tone in browse.setTone(tone, for: id) }
       )
@@ -183,6 +184,12 @@ struct BrowsingView: View {
       }
     }
     .task(id: tab.id) { await loadStoredCover(for: tab) }
+  }
+
+  private var topClearance: CGFloat {
+    if screenLayout.isWide || screenLayout.fold != nil { return DuoLayout.toolbarClearance }
+    guard screenLayout == .phone else { return 0 }
+    return windowControls.topReserve(fromY: pageSpan.safeTop, leading: 0)
   }
 
   private func cover(for tab: BrowserTab) -> UIImage? {
@@ -469,6 +476,7 @@ struct BrowsingView: View {
 nonisolated struct PageSpan: Equatable {
   let width: CGFloat
   let safeSide: CGFloat
+  var safeTop: CGFloat = 0
 }
 
 struct StoredCover {

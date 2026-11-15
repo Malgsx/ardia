@@ -5,6 +5,7 @@ import SwiftUI
 struct DuoBrowsingView: View {
   @Environment(AppModel.self) private var app
   @Environment(\.screenLayout) private var layout
+  @Environment(\.windowControls) private var windowControls
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isSidebarShown = false
 
@@ -69,6 +70,7 @@ struct DuoBrowsingView: View {
     return ZStack(alignment: .topLeading) {
       pageCard(card)
       DuoToolbar(showsAddress: true, isSidebarShown: isSidebarShown, toggleSidebar: { setSidebar(!isSidebarShown) })
+        .padding(.leading, toolbarLead(card))
         .frame(width: card.width)
         .offset(x: card.minX, y: card.minY + DuoLayout.toolbarTop)
       if isSidebarShown {
@@ -98,6 +100,7 @@ struct DuoBrowsingView: View {
     return ZStack(alignment: .topLeading) {
       pageCard(card)
       DuoToolbar(showsAddress: false, isSidebarShown: false, toggleSidebar: {})
+        .padding(.leading, toolbarLead(card))
         .frame(width: card.width)
         .offset(x: card.minX, y: card.minY + DuoLayout.toolbarTop)
       DuoSidebar(style: .panel, close: {})
@@ -106,6 +109,10 @@ struct DuoBrowsingView: View {
         .offset(y: fold.bottom)
     }
     .frame(width: size.width, height: size.height, alignment: .topLeading)
+  }
+
+  private func toolbarLead(_ card: CGRect) -> CGFloat {
+    windowControls.leadingReserve(fromX: card.minX + DuoLayout.toolbarInset, top: card.minY + DuoLayout.toolbarTop)
   }
 
   @ViewBuilder

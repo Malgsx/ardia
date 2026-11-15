@@ -30,6 +30,7 @@ struct StartBar: View {
       GlassCircleButton(symbol: "gearshape", label: "Settings", action: settings)
     }
     .padding(.horizontal, geometry.safeSide + TabsLayout.barSideInset)
+    .frame(maxWidth: screenLayout.isWide ? DuoLayout.startMaxWidth : .infinity)
     .frame(width: geometry.container.width)
     .position(x: geometry.container.width / 2, y: geometry.barCenterY)
   }

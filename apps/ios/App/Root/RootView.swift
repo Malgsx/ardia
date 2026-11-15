@@ -7,6 +7,7 @@ struct RootView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @State private var screenLayout = ScreenLayout.phone
+  @State private var windowControls = WindowControls()
 
   var body: some View {
     @Bindable var app = app
@@ -69,7 +70,8 @@ struct RootView: View {
     .onChange(of: app.sync.snapshot.profiles.map(\.syncId)) { _, _ in app.applySpaces() }
     .onChange(of: app.sync.lastSynced) { _, _ in app.drainSystemInbox(sendsOnly: true) }
     .environment(\.screenLayout, screenLayout)
-    .readsScreenLayout($screenLayout)
+    .environment(\.windowControls, windowControls)
+    .readsScreenLayout($screenLayout, windowControls: $windowControls)
     .modifier(DuoCanvasFrame())
     .environment(\.profileLook, app.look)
     .environment(\.usesGlass, app.usesGlass(reduceTransparency: reduceTransparency))
