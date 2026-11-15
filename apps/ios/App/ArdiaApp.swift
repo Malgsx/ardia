@@ -21,5 +21,11 @@ struct ArdiaApp: App {
         .modelContainer(model.container)
         .systemIntegrations(model)
     }
+    .commands {
+      CommandGroup(replacing: .newItem) {
+        Button("New Tab") { model.newTab() }
+          .keyboardShortcut("t", modifiers: .command)
+      }
+    }
   }
 }
