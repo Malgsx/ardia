@@ -131,6 +131,20 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Open in Ardia
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SKIP_INSTALL: YES
+  ArdiaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+        type: syncedFolder
+    dependencies:
+      - target: Ardia
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ardia.browser.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+        TARGETED_DEVICE_FAMILY: "1,2"
 schemes:
   Ardia:
     build:
@@ -138,5 +152,9 @@ schemes:
         Ardia: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - ArdiaUITests
     archive:
       config: Release

@@ -268,6 +268,13 @@ previous tab), `-BrowsePagerScript` plays a scripted swipe (cancel, edge, commit
   arrives once and no seq is reused. iCloud's own delivery between devices is the one thing left for a real phone.
 - `pnpm --filter @ardia/sync test` includes the companion's tests and checks the bundles are current.
 - The app's own states are checked in the simulator (see the agent notes below).
+- `ArdiaUITests` (`apps/ios/UITests`, the `Ardia` scheme's test action) launches demo mode on an iPad simulator and
+  checks the iPad layout: the window fills the screen, the start screen's bar and the command bar keep their capped
+  width centred, a page gets the wide toolbar in both orientations, and the deck opens as a sidebar. Each test
+  attaches a screenshot. It skips on an iPhone simulator and needs network for the demo pages. Run it and pull the
+  screenshots out with
+  `xcodebuild -project apps/ios/Ardia.xcodeproj -scheme Ardia -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' -resultBundlePath <scratch>/ipad.xcresult test`
+  and `xcrun xcresulttool export attachments --path <scratch>/ipad.xcresult --output-path <scratch>/shots`.
 - CI (`.github/workflows/ios.yml`, on GitHub's `xcode-27` runner with Xcode 27.1) builds the `Ardia` scheme for the
   simulator without signing and runs the ArdiaKit and `packages/sync` Swift tests and the bundle check, on pull
   requests and pushes to `main` that touch `apps/ios`, `packages/sync`, `packages/core` or the workflow.
