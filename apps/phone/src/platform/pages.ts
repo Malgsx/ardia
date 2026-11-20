@@ -10,6 +10,7 @@ export type {
   PageSnapshot,
   PageState,
   PageSummaryProvider,
+  ClaudeAccountState,
   PageTone,
   PageViewHandle,
   PressTarget,

@@ -1,9 +1,44 @@
 import { create } from "zustand";
-import { pages, type PageSummaryProvider } from "../../platform/pages";
+import { pages, type ClaudeAccountState, type PageSummaryProvider } from "../../platform/pages";
 import { connectChatGPT } from "../browseForMe/store";
 import { settled } from "../pages/store";
 
-export const usePageSummary = create<{ provider: PageSummaryProvider }>()(() => ({ provider: "on_device" }));
+export const usePageSummary = create<{ provider: PageSummaryProvider; claude: ClaudeAccountState | null }>()(() => ({ provider: "on_device", claude: null }));
+
+export const useClaudeAccount = () => usePageSummary((state) => state.claude);
+
+export function claudeOffered(): boolean {
+  try {
+    return pages.offersClaude();
+  } catch {
+    return false;
+  }
+}
+
+export async function refreshClaudeAccount() {
+  if (!claudeOffered()) return;
+  const claude = await settled(() => pages.claudeAccount(), null);
+  if (claude) usePageSummary.setState({ claude });
+}
+
+/** Checks the key with Anthropic, saves it to the Keychain and, when it's good, makes Claude the writer. */
+export async function saveClaudeKey(key: string): Promise<boolean> {
+  if (!claudeOffered()) return false;
+  const current = usePageSummary.getState().claude;
+  usePageSummary.setState({ claude: { connected: current?.connected ?? false, label: current?.label ?? null, checking: true, problem: null } });
+  const claude = await settled(() => pages.saveClaudeKey(key), null);
+  if (claude) usePageSummary.setState({ claude });
+  if (!claude?.connected) return false;
+  await saveProvider("claude", ++selection);
+  return true;
+}
+
+export async function removeClaudeKey() {
+  if (!claudeOffered()) return;
+  const claude = await settled(() => pages.removeClaudeKey(), null);
+  if (claude) usePageSummary.setState({ claude });
+  await refreshPageSummaryProvider();
+}
 
 export const usePageSummaryProvider = () => usePageSummary((state) => state.provider);
 

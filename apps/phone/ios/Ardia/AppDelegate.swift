@@ -10,6 +10,19 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
   @objc var window: UIWindow?
   private var sceneAdoption: NSObjectProtocol?
 
+  // ⌘T on an iPad (or iPhone) with a hardware keyboard: a new tab, the same as the Search quick action.
+  override func buildMenu(with builder: UIMenuBuilder) {
+    super.buildMenu(with: builder)
+    guard builder.system == .main else { return }
+    let newTab = UIKeyCommand(title: String(localized: "New Tab"), image: UIImage(systemName: "plus.square.on.square"), action: #selector(ardiaNewTab(_:)), input: "t", modifierFlags: .command)
+    newTab.wantsPriorityOverSystemBehavior = true
+    builder.insertChild(UIMenu(title: "", options: .displayInline, children: [newTab]), atStartOfMenu: .file)
+  }
+
+  @objc func ardiaNewTab(_ sender: Any?) {
+    PhoneSystemLinks.shared.receive(shortcutType: "com.ardia.browser.ios.search")
+  }
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
