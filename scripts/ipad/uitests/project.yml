@@ -1,0 +1,22 @@
+name: ArdiaDeviceTests
+options:
+  deploymentTarget:
+    iOS: "26.0"
+targets:
+  ArdiaDeviceUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.ardia.devicetests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+schemes:
+  ArdiaDeviceTests:
+    build:
+      targets:
+        ArdiaDeviceUITests: [test]
+    test:
+      targets: [ArdiaDeviceUITests]
