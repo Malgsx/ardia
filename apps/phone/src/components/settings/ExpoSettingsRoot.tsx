@@ -21,7 +21,8 @@ import { ExpoSettingsDone } from "./ExpoSettingsDone";
 import { syncOffered } from "../../state/sync/offer";
 import { browseForMeOffered, refreshChatGPTConnected, useChatGPTConnected } from "../../state/browseForMe/store";
 import { pageSummariesSwitchable, refreshPageSummariesEnabled, setPageSummariesEnabled, usePageSummariesEnabled } from "../../state/pageSummary/enabled";
-import { PAGE_SUMMARY_COPY } from "../../state/pageSummary/copy";
+import { PAGE_SUMMARY_COPY, pageSummaryRowValue } from "../../state/pageSummary/copy";
+import { pageSummaryChoiceOffered, refreshPageSummaryProvider, usePageSummaryProvider } from "../../state/pageSummary/store";
 
 const INTERVALS = (Object.keys(AUTO_ARCHIVE_INTERVALS) as AutoArchiveInterval[]).map((id) => ({ id, title: autoArchiveTitle(id) }));
 const APP_LINKS = [
@@ -55,9 +56,12 @@ export function ExpoSettingsRoot() {
   const chatGPT = useChatGPTConnected();
   const summaries = usePageSummariesEnabled();
   const switchesSummaries = pageSummariesSwitchable();
+  const choosesSummaryWriter = pageSummaryChoiceOffered();
+  const summaryProvider = usePageSummaryProvider();
   useEffect(() => {
     void refreshChatGPTConnected();
     void refreshPageSummariesEnabled();
+    void refreshPageSummaryProvider();
   }, []);
   return (
     <ExpoSettingsDone>
@@ -149,7 +153,13 @@ export function ExpoSettingsRoot() {
                 </LabeledContent>
               </NavigationLink>
             ) : null}
-            {switchesSummaries ? (
+            {switchesSummaries && choosesSummaryWriter ? (
+              <NavigationLink value={link({ page: "pageSummary" })}>
+                <LabeledContent label={<ExpoRowLabel title={PAGE_SUMMARY_COPY.title} systemImage="sparkles" tint="nightShade" />}>
+                  <Text>{pageSummaryRowValue(summaries, summaryProvider, chatGPT)}</Text>
+                </LabeledContent>
+              </NavigationLink>
+            ) : switchesSummaries ? (
               <Toggle isOn={summaries} onIsOnChange={(on) => void setPageSummariesEnabled(on)} modifiers={modifierList(settingsSwitchStyle())}>
                 <ExpoRowLabel title={PAGE_SUMMARY_COPY.title} systemImage="sparkles" tint="nightShade" />
               </Toggle>

@@ -119,6 +119,7 @@ export type {
   PageSnapshot,
   PageState,
   PageSummaryProvider,
+  ClaudeAccountState,
   PageTone,
   PageObscuredInsets,
   PageObscuredColors,

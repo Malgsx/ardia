@@ -129,7 +129,9 @@ export type PageSummaryTrigger = "pinch" | "menu";
 
 export type PageSummaryOutcome = "chatgpt" | "on_device" | "excerpts" | "failed";
 
-export type PageSummaryProvider = "on_device" | "chatgpt";
+export type PageSummaryProvider = "on_device" | "chatgpt" | "claude";
+
+export type ClaudeAccountState = { connected: boolean; label: string | null; checking: boolean; problem: string | null };
 
 export type PressTarget = { kind: "link"; url: string; text: string | null } | { kind: "image"; url: string; linkUrl: string | null };
 

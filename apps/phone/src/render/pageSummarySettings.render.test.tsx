@@ -34,7 +34,7 @@ const onIos = Platform.OS === "ios" ? test : test.skip;
 const titledHosts = (node: ReactTestInstance) => node.findAll((inner) => typeof inner.type === "string" && typeof inner.props.title === "string" && typeof inner.props.systemImage === "string").map((inner) => inner.props.title as string);
 const expoSummaryToggle = (root: ReactTestRenderer) => root.root.findAll((node) => typeof node.type === "string" && typeof node.props.isOn === "boolean").find((node) => titledHosts(node).includes("Pinch to Summarize"));
 
-let stored: "on_device" | "chatgpt" = "on_device";
+let stored: import("../platform/pages").PageSummaryProvider = "on_device";
 let offered = true;
 let enabledStored = false;
 let switchable = true;

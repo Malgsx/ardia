@@ -56,12 +56,41 @@ final class ChatGPTAccount {
 
   @discardableResult
   func signIn(using session: WebAuthenticationSession) async -> Bool {
+    await signIn { url in
+      _ = try await session.authenticate(
+        using: url,
+        callback: .customScheme(ChatGPTAuth.finishedScheme),
+        preferredBrowserSession: .shared,
+        additionalHeaderFields: [:]
+      )
+    }
+  }
+
+  /// Signs in from outside SwiftUI (the shared settings pages call this through the module): OpenAI's own sign-in page
+  /// in the system's web authentication sheet, which shares Safari's cookies so an existing ChatGPT login or SSO carries over.
+  @discardableResult
+  func signIn(presentingFrom anchor: ASPresentationAnchor) async -> Bool {
+    let presenter = ChatGPTSignInPresenter(anchor: anchor)
+    return await signIn { url in
+      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        let session = ASWebAuthenticationSession(url: url, callback: .customScheme(ChatGPTAuth.finishedScheme)) { _, error in
+          if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+        }
+        session.presentationContextProvider = presenter
+        session.prefersEphemeralWebBrowserSession = false
+        presenter.session = session
+        if !session.start() { continuation.resume(throwing: ChatGPTFailure.cancelled) }
+      }
+    }
+  }
+
+  private func signIn(open: (URL) async throws -> Void) async -> Bool {
     guard !isSigningIn else { return false }
     isSigningIn = true
     problem = nil
     defer { isSigningIn = false }
     do {
-      let connection = try await authorize(using: session)
+      let connection = try await authorize(open: open)
       save(connection)
       await loadModels()
       return true
@@ -123,7 +152,7 @@ final class ChatGPTAccount {
     signOutLocally(failure)
   }
 
-  private func authorize(using session: WebAuthenticationSession) async throws -> ChatGPTConnection {
+  private func authorize(open: (URL) async throws -> Void) async throws -> ChatGPTConnection {
     let endpoints = try await discover()
     let previousSubject = connection?.identity.subject
     let server = try LoopbackCallbackServer.start()
@@ -133,12 +162,7 @@ final class ChatGPTAccount {
     server.expect(state: authorization.state, savedClientID: savedClientID)
     var browserFailed = false
     do {
-      _ = try await session.authenticate(
-        using: authorization.url(endpoint: endpoints.authorization),
-        callback: .customScheme(ChatGPTAuth.finishedScheme),
-        preferredBrowserSession: .shared,
-        additionalHeaderFields: [:]
-      )
+      try await open(authorization.url(endpoint: endpoints.authorization))
     } catch {
       browserFailed = true
     }
@@ -276,5 +300,17 @@ enum ChatGPTHTTP {
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
       completionHandler(nil)
     }
+  }
+}
+
+@MainActor
+final class ChatGPTSignInPresenter: NSObject, ASWebAuthenticationPresentationContextProviding {
+  let anchor: ASPresentationAnchor
+  var session: ASWebAuthenticationSession?
+
+  init(anchor: ASPresentationAnchor) { self.anchor = anchor }
+
+  nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    MainActor.assumeIsolated { anchor }
   }
 }

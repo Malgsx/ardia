@@ -223,6 +223,36 @@ public final class PageViewModule: Module {
       }
     }.runOnQueue(.main)
 
+    AsyncFunction("pageSummaryProvider") { () -> String in
+      MainActor.assumeIsolated { PageSummaryProvider.current.rawValue }
+    }.runOnQueue(.main)
+
+    AsyncFunction("setPageSummaryProvider") { (provider: String) -> String in
+      MainActor.assumeIsolated { () -> String in
+        PageSummaryProvider.current = PageSummaryProvider(rawValue: provider) ?? .onDevice
+        return PageSummaryProvider.current.rawValue
+      }
+    }.runOnQueue(.main)
+
+    AsyncFunction("claudeAccount") { () -> [String: Any] in
+      MainActor.assumeIsolated { Self.claudeState() }
+    }.runOnQueue(.main)
+
+    AsyncFunction("saveClaudeKey") { (key: String, promise: Promise) in
+      Task { @MainActor in
+        _ = await ClaudeAccount.shared.save(key: key)
+        promise.resolve(Self.claudeState())
+      }
+    }.runOnQueue(.main)
+
+    AsyncFunction("removeClaudeKey") { () -> [String: Any] in
+      MainActor.assumeIsolated { () -> [String: Any] in
+        ClaudeAccount.shared.remove()
+        if PageSummaryProvider.current == .claude { PageSummaryProvider.current = .onDevice }
+        return Self.claudeState()
+      }
+    }.runOnQueue(.main)
+
     AsyncFunction("snapshot") { (pageID: String, options: SnapshotOptionsRecord, promise: Promise) in
       Self.main(promise) { try await PhonePages.shared.snapshot(pageID, maxWidth: options.maxWidth, quality: options.quality) }
     }.runOnQueue(.main)
@@ -588,5 +618,13 @@ public final class BlockingModule: Module {
     AsyncFunction("blockedCount") { (pageID: String) -> Int? in
       MainActor.assumeIsolated { PhonePages.shared.page(pageID)?.blockedResources.count }
     }.runOnQueue(.main)
+  }
+}
+
+extension PageViewModule {
+  @MainActor
+  static func claudeState() -> [String: Any] {
+    let account = ClaudeAccount.shared
+    return ["connected": account.isConnected, "label": account.label as Any, "checking": account.isChecking, "problem": account.problem as Any]
   }
 }

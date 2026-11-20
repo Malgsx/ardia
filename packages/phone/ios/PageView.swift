@@ -89,7 +89,13 @@ final class PageView: ExpoView {
     let made = PagePinchWatcher(container: self)
     made.ignoresTouch = { [weak self] in self?.isSummaryTouch($0) == true }
     made.moment = { [weak self] in PageSummarySwitch.shared.isOn ? self?.pinchMoment() : nil }
-    made.onPinchedIn = { [weak self] in _ = self?.summarize(.pinch) }
+    made.onPinchedIn = { [weak self] in
+      guard let self else { return }
+      _ = self.summarize(.pinch)
+      if !self.presentingSummary { self.releaseSqueeze(opened: false) }
+    }
+    made.onSqueeze = { [weak self] scale in self?.squeezePage(scale) }
+    made.onRelease = { [weak self] opened in self?.releaseSqueeze(opened: opened) }
     madePinchWatcher = made
     return made
   }
@@ -415,16 +421,138 @@ final class PageView: ExpoView {
     session.onSettled = { settled in
       PhonePages.shared.send(pageID, "page.summarySettled", ["trigger": settled.trigger.rawValue, "outcome": settled.outcome, "isPrivate": isPrivate])
     }
-    let layer = ensureSummaryLayer()
-    summaryHideTask?.cancel()
-    layer.isHidden = false
-    bringSubviewToFront(layer)
-    layer.presenter.bottomInset = summaryBottomInset
-    withAnimation(.smooth(duration: 0.32)) { layer.presenter.session = session }
     session.start(page)
     PhonePages.shared.send(pageID, "page.summaryOpened", ["trigger": trigger.rawValue, "isPrivate": isPrivate])
-    UIAccessibility.post(notification: .layoutChanged, argument: layer)
+    presentingSummary = true
+    let webView = hostedWebView
+    Task { @MainActor [weak self] in
+      let image = try? await webView?.takeSnapshot(configuration: nil)
+      guard let self else { return }
+      self.presentingSummary = false
+      guard session.isCurrent(for: self.page) else { return self.clearSqueeze() }
+      self.present(session, image: image)
+    }
     return true
+  }
+
+  @MainActor
+  private func present(_ session: PageSummarySession, image: UIImage?) {
+    let layer = ensureSummaryLayer()
+    let presenter = layer.presenter
+    summaryHideTask?.cancel()
+    var instant = Transaction()
+    instant.disablesAnimations = true
+    withTransaction(instant) {
+      presenter.bottomInset = summaryBottomInset
+      presenter.topInset = summaryTopInset
+      presenter.pageImage = image
+      presenter.startScale = squeezeScale
+      presenter.collapsed = false
+      presenter.session = session
+    }
+    layer.isHidden = false
+    bringSubviewToFront(layer)
+    layer.layoutIfNeeded()
+    clearSqueeze()
+    if UIAccessibility.isReduceMotionEnabled {
+      withAnimation(.easeOut(duration: 0.2)) { presenter.collapsed = true }
+    } else {
+      DispatchQueue.main.async {
+        withAnimation(.spring(duration: 0.55, bounce: 0.16)) { presenter.collapsed = true }
+      }
+    }
+    UIAccessibility.post(notification: .screenChanged, argument: layer)
+  }
+
+  private var summaryTopInset: CGFloat {
+    max(effectiveObscuredInsets.top, safeAreaInsets.top)
+  }
+
+  // MARK: Arc-style squeeze
+
+  private var presentingSummary = false
+
+  /// The page's current squeeze, 1 when it isn't squeezed.
+  @MainActor
+  private var squeezeScale: CGFloat {
+    isSqueezing ? CGFloat((layer.presentation()?.sublayerTransform ?? layer.sublayerTransform).m11) : 1
+  }
+
+  @MainActor
+  private func clearSqueeze() {
+    isSqueezing = false
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    layer.removeAnimation(forKey: "squeeze")
+    layer.sublayerTransform = CATransform3DIdentity
+    if let webView = hostedWebView {
+      webView.layer.removeAnimation(forKey: "squeezeCorner")
+      webView.layer.cornerRadius = 0
+      webView.layer.masksToBounds = false
+    }
+    CATransaction.commit()
+  }
+
+  static let squeezeDepth: CGFloat = 0.16
+  static let squeezeCorner: CGFloat = 32
+  private var isSqueezing = false
+
+  /// How far the page shrinks for a pinch scale: follows the fingers, then resists, never past `squeezeDepth`.
+  static func squeezeAmount(_ scale: CGFloat) -> CGFloat {
+    let pinched = min(max(1 - scale, 0), 1)
+    return squeezeDepth * (1 - 1 / (pinched * 3 + 1))
+  }
+
+  @MainActor
+  private func squeezePage(_ scale: CGFloat) {
+    guard !UIAccessibility.isReduceMotionEnabled, let webView = hostedWebView, webView.superview === self else { return }
+    let amount = Self.squeezeAmount(scale)
+    isSqueezing = true
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    layer.removeAnimation(forKey: "squeeze")
+    webView.layer.removeAnimation(forKey: "squeezeCorner")
+    layer.sublayerTransform = CATransform3DMakeScale(1 - amount, 1 - amount, 1)
+    webView.layer.cornerCurve = .continuous
+    webView.layer.cornerRadius = Self.squeezeCorner * amount / Self.squeezeDepth
+    webView.layer.masksToBounds = true
+    CATransaction.commit()
+  }
+
+  @MainActor
+  private func releaseSqueeze(opened: Bool) {
+    // A pinch that opens a summary keeps the page squeezed; the summary's picture takes over from exactly there.
+    guard isSqueezing, !opened else { return }
+    isSqueezing = false
+    let webView = hostedWebView
+    let fromTransform = layer.presentation()?.sublayerTransform ?? layer.sublayerTransform
+    let fromCorner = webView?.layer.presentation()?.cornerRadius ?? webView?.layer.cornerRadius ?? 0
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    layer.sublayerTransform = CATransform3DIdentity
+    webView?.layer.cornerRadius = 0
+    CATransaction.setCompletionBlock { [weak webView] in
+      guard let webView, webView.layer.cornerRadius == 0 else { return }
+      webView.layer.masksToBounds = false
+    }
+    let spring = CASpringAnimation(keyPath: "sublayerTransform")
+    spring.fromValue = NSValue(caTransform3D: fromTransform)
+    spring.toValue = NSValue(caTransform3D: CATransform3DIdentity)
+    spring.mass = 1
+    spring.stiffness = 340
+    spring.damping = 30
+    spring.duration = spring.settlingDuration
+    layer.add(spring, forKey: "squeeze")
+    if let webView {
+      let corner = CASpringAnimation(keyPath: "cornerRadius")
+      corner.fromValue = fromCorner
+      corner.toValue = 0
+      corner.stiffness = spring.stiffness
+      corner.damping = spring.damping
+      corner.duration = spring.duration
+      webView.layer.add(corner, forKey: "squeezeCorner")
+    }
+    CATransaction.commit()
   }
 
   @MainActor
@@ -444,17 +572,23 @@ final class PageView: ExpoView {
   func dismissSummary(animated: Bool) {
     guard let layer = summaryLayer, let session = layer.presenter.session else { return }
     session.cancel()
-    layer.presenter.cardFrame = .zero
     summaryHideTask?.cancel()
-    guard animated else {
-      layer.presenter.session = nil
+    let presenter = layer.presenter
+    guard animated, !UIAccessibility.isReduceMotionEnabled, presenter.pageImage != nil else {
+      presenter.session = nil
+      presenter.pageImage = nil
+      presenter.collapsed = false
       layer.isHidden = true
       return
     }
-    withAnimation(.smooth(duration: 0.24)) { layer.presenter.session = nil }
+    // The preview grows back into the page, then the live page shows through.
+    presenter.startScale = 1
+    withAnimation(.spring(duration: 0.42, bounce: 0.05)) { presenter.collapsed = false }
     summaryHideTask = Task { @MainActor [weak layer] in
-      try? await Task.sleep(for: .milliseconds(300))
-      guard !Task.isCancelled, let layer, layer.presenter.session == nil else { return }
+      try? await Task.sleep(for: .milliseconds(430))
+      guard !Task.isCancelled, let layer, layer.presenter.session === session else { return }
+      layer.presenter.session = nil
+      layer.presenter.pageImage = nil
       layer.isHidden = true
     }
     UIAccessibility.post(notification: .layoutChanged, argument: hostedWebView)

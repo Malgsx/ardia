@@ -9,6 +9,7 @@ import type {
   PageSetup,
   PageSnapshot,
   PageSummaryProvider,
+  ClaudeAccountState,
   PageScrollPosition,
   PageState,
   PageToneInsets,
@@ -77,6 +78,9 @@ type PagesNative = {
   setPageSummariesEnabled?(enabled: boolean): Promise<boolean>;
   pageSummaryProvider?(): Promise<string>;
   setPageSummaryProvider?(provider: PageSummaryProvider): Promise<string>;
+  claudeAccount?(): Promise<ClaudeAccountState>;
+  saveClaudeKey?(key: string): Promise<ClaudeAccountState>;
+  removeClaudeKey?(): Promise<ClaudeAccountState>;
   translation?(): Promise<PageTranslationState>;
   translationUrl?(pageUrl: string): Promise<string | null>;
   confirmTranslation?(): Promise<void>;
@@ -173,8 +177,12 @@ export const pages = {
   summariesEnabled: async (): Promise<boolean> => (await native().pageSummariesEnabled?.()) === true,
   setSummariesEnabled: async (enabled: boolean): Promise<boolean> => (await native().setPageSummariesEnabled?.(enabled)) === true,
   choosesSummaryProvider: (): boolean => typeof native().setPageSummaryProvider === "function",
-  summaryProvider: async (): Promise<PageSummaryProvider> => ((await native().pageSummaryProvider?.()) === "chatgpt" ? "chatgpt" : "on_device"),
-  setSummaryProvider: async (provider: PageSummaryProvider): Promise<PageSummaryProvider> => ((await native().setPageSummaryProvider?.(provider)) === "chatgpt" ? "chatgpt" : "on_device"),
+  summaryProvider: async (): Promise<PageSummaryProvider> => summaryProviderFrom(await native().pageSummaryProvider?.()),
+  setSummaryProvider: async (provider: PageSummaryProvider): Promise<PageSummaryProvider> => summaryProviderFrom(await native().setPageSummaryProvider?.(provider)),
+  offersClaude: (): boolean => typeof native().saveClaudeKey === "function",
+  claudeAccount: async (): Promise<ClaudeAccountState | null> => (await native().claudeAccount?.()) ?? null,
+  saveClaudeKey: async (key: string): Promise<ClaudeAccountState | null> => (await native().saveClaudeKey?.(key)) ?? null,
+  removeClaudeKey: async (): Promise<ClaudeAccountState | null> => (await native().removeClaudeKey?.()) ?? null,
   translation: (): Promise<PageTranslationState | null> => native().translation?.() ?? Promise.resolve(null),
   translationUrl: (pageUrl: string): Promise<string | null> => native().translationUrl?.(pageUrl) ?? Promise.resolve(null),
   confirmTranslation: (): Promise<void> => native().confirmTranslation?.() ?? Promise.resolve(),
@@ -219,3 +227,7 @@ export const pages = {
       listener(event.name === "page.state" ? { ...event, state: normalizeState(event.state, false) } : event),
     ),
 };
+
+function summaryProviderFrom(value: string | undefined): PageSummaryProvider {
+  return value === "chatgpt" || value === "claude" ? value : "on_device";
+}
