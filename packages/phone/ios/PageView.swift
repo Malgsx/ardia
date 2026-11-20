@@ -468,11 +468,9 @@ final class PageView: ExpoView {
     max(effectiveObscuredInsets.top, safeAreaInsets.top)
   }
 
-  // MARK: Arc-style squeeze
 
   private var presentingSummary = false
 
-  /// The page's current squeeze, 1 when it isn't squeezed.
   @MainActor
   private var squeezeScale: CGFloat {
     isSqueezing ? CGFloat((layer.presentation()?.sublayerTransform ?? layer.sublayerTransform).m11) : 1
@@ -497,7 +495,6 @@ final class PageView: ExpoView {
   static let squeezeCorner: CGFloat = 32
   private var isSqueezing = false
 
-  /// How far the page shrinks for a pinch scale: follows the fingers, then resists, never past `squeezeDepth`.
   static func squeezeAmount(_ scale: CGFloat) -> CGFloat {
     let pinched = min(max(1 - scale, 0), 1)
     return squeezeDepth * (1 - 1 / (pinched * 3 + 1))
@@ -521,7 +518,6 @@ final class PageView: ExpoView {
 
   @MainActor
   private func releaseSqueeze(opened: Bool) {
-    // A pinch that opens a summary keeps the page squeezed; the summary's picture takes over from exactly there.
     guard isSqueezing, !opened else { return }
     isSqueezing = false
     let webView = hostedWebView
@@ -581,7 +577,6 @@ final class PageView: ExpoView {
       layer.isHidden = true
       return
     }
-    // The preview grows back into the page, then the live page shows through.
     presenter.startScale = 1
     withAnimation(.spring(duration: 0.42, bounce: 0.05)) { presenter.collapsed = false }
     summaryHideTask = Task { @MainActor [weak layer] in

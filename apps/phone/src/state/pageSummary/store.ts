@@ -21,7 +21,6 @@ export async function refreshClaudeAccount() {
   if (claude) usePageSummary.setState({ claude });
 }
 
-/** Checks the key with Anthropic, saves it to the Keychain and, when it's good, makes Claude the writer. */
 export async function saveClaudeKey(key: string): Promise<boolean> {
   if (!claudeOffered()) return false;
   const current = usePageSummary.getState().claude;

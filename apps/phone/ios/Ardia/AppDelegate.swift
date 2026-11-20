@@ -10,7 +10,6 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
   @objc var window: UIWindow?
   private var sceneAdoption: NSObjectProtocol?
 
-  // ⌘T on an iPad (or iPhone) with a hardware keyboard: a new tab, the same as the Search quick action.
   override func buildMenu(with builder: UIMenuBuilder) {
     super.buildMenu(with: builder)
     guard builder.system == .main else { return }

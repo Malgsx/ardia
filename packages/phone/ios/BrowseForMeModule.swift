@@ -37,7 +37,6 @@ public final class BrowseForMeModule: Module {
       MainActor.assumeIsolated { BrowseForMeHost.shared.open(query) }
     }.runOnQueue(.main)
 
-    // The shared settings pages (Pinch to Summarize) manage the ChatGPT account through these, as Android's do.
     AsyncFunction("account") { () -> [String: Any] in
       MainActor.assumeIsolated { Self.accountState() }
     }.runOnQueue(.main)

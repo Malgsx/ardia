@@ -196,7 +196,6 @@ extension PageSummarySwitch {
   static let shared = PageSummarySwitch(defaults: .standard)
 }
 
-/// Who writes a page summary on iPhone and iPad: Apple Intelligence (with key lines as its fallback) or the user's ChatGPT plan.
 enum PageSummaryProvider: String {
   case onDevice = "on_device"
   case chatGPT = "chatgpt"
@@ -217,9 +216,7 @@ final class PageSummaryPresenter {
   var session: PageSummarySession?
   var bottomInset: CGFloat = 0
   var topInset: CGFloat = 0
-  /// The page as it looked when the summary opened; it collapses into the preview card and grows back on close.
   var pageImage: UIImage?
-  /// The squeeze the page was at when the pinch let go, so the picture starts exactly where the page was.
   var startScale: CGFloat = 1
   var collapsed = false
   @ObservationIgnored var onDismiss: (() -> Void)?
@@ -251,7 +248,6 @@ final class PageSummaryLayer: UIView {
   }
 }
 
-/// Where the collapsed page, the title and the summary sit: the page top left on a wide iPad window, top centre on a narrow one.
 struct PageSummaryLayout {
   let size: CGSize
   let wide: Bool
@@ -479,9 +475,7 @@ final class PagePinchWatcher: NSObject, UIGestureRecognizerDelegate {
   var moment: (() -> PagePinch.Moment?)?
   var onPinchedIn: (() -> Void)?
   var ignoresTouch: ((UITouch) -> Bool)?
-  /// Follows a qualifying pinch with its live scale, so the page can shrink under the fingers as Arc Search's does.
   var onSqueeze: ((CGFloat) -> Void)?
-  /// The pinch ended; true when it opened a summary.
   var onRelease: ((Bool) -> Void)?
 
   private lazy var recognizer = UIPinchGestureRecognizer(target: self, action: #selector(pinched(_:)))
@@ -572,8 +566,6 @@ enum ClaudeFailure: Error {
   }
 }
 
-/// Claude for page summaries, on the user's own Anthropic API key (their API credits). The key stays in this device's
-/// Keychain and requests go straight to api.anthropic.com, never through a server of ours.
 @MainActor
 @Observable
 final class ClaudeAccount {
@@ -592,7 +584,6 @@ final class ClaudeAccount {
     isConnected = KeychainSecret.read(Self.keychainAccount) != nil
   }
 
-  /// The last four characters, so the settings page can show which key is saved without showing the key.
   var label: String? {
     guard let key = Self.key, key.count > 8 else { return nil }
     return String(localized: "API key ending in \(String(key.suffix(4)))")
@@ -603,7 +594,6 @@ final class ClaudeAccount {
   }
 
   private static func request(_ path: String, query: [URLQueryItem] = [], key: String, method: String = "GET") -> URLRequest {
-    // appending(path:) would percent-encode a "?" into the path, so the query goes in separately.
     let url = query.isEmpty ? api.appending(path: path) : api.appending(path: path).appending(queryItems: query)
     var request = URLRequest(url: url, timeoutInterval: 30)
     request.httpMethod = method
@@ -613,7 +603,6 @@ final class ClaudeAccount {
     return request
   }
 
-  /// Checks the key against the Models API (no tokens spent) before saving it.
   @discardableResult
   func save(key raw: String) async -> Bool {
     let key = raw.trimmingCharacters(in: .whitespacesAndNewlines)

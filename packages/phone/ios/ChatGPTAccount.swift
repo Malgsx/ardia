@@ -66,8 +66,6 @@ final class ChatGPTAccount {
     }
   }
 
-  /// Signs in from outside SwiftUI (the shared settings pages call this through the module): OpenAI's own sign-in page
-  /// in the system's web authentication sheet, which shares Safari's cookies so an existing ChatGPT login or SSO carries over.
   @discardableResult
   func signIn(presentingFrom anchor: ASPresentationAnchor) async -> Bool {
     let presenter = ChatGPTSignInPresenter(anchor: anchor)
