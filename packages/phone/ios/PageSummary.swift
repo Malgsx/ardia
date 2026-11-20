@@ -602,8 +602,10 @@ final class ClaudeAccount {
     KeychainSecret.read(keychainAccount).map { String(decoding: $0, as: UTF8.self) }
   }
 
-  private static func request(_ path: String, key: String, method: String = "GET") -> URLRequest {
-    var request = URLRequest(url: api.appending(path: path), timeoutInterval: 30)
+  private static func request(_ path: String, query: [URLQueryItem] = [], key: String, method: String = "GET") -> URLRequest {
+    // appending(path:) would percent-encode a "?" into the path, so the query goes in separately.
+    let url = query.isEmpty ? api.appending(path: path) : api.appending(path: path).appending(queryItems: query)
+    var request = URLRequest(url: url, timeoutInterval: 30)
     request.httpMethod = method
     request.setValue(key, forHTTPHeaderField: "x-api-key")
     request.setValue(version, forHTTPHeaderField: "anthropic-version")
@@ -623,7 +625,7 @@ final class ClaudeAccount {
     isChecking = true
     defer { isChecking = false }
     do {
-      let (data, response) = try await URLSession.shared.data(for: Self.request("models?limit=1", key: key))
+      let (data, response) = try await URLSession.shared.data(for: Self.request("models", query: [URLQueryItem(name: "limit", value: "1")], key: key))
       let status = (response as? HTTPURLResponse)?.statusCode ?? 0
       guard status == 200 else {
         problem = ClaudeFailure.from(status: status, body: data).message + "."

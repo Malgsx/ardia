@@ -79,6 +79,11 @@ export function PageSummaryPage() {
       ) : null}
       {enabled && asksForKey ? (
         <View testID="claudeKeyEntry" style={styles.connect}>
+          {claude?.problem ? (
+            <Text testID="claudeKeyProblem" accessibilityLiveRegion="polite" style={[font.footnote, { color: theme.destructive }]}>
+              {claude.problem}
+            </Text>
+          ) : null}
           <TextInput
             testID="claudeKeyField"
             autoFocus
@@ -111,7 +116,6 @@ export function PageSummaryPage() {
           </Pressable>
         </View>
       ) : null}
-      {claude?.problem ? <Text style={[font.footnote, styles.problem, { color: theme.destructive }]}>{claude.problem}</Text> : null}
       {enabled && offersClaude && claudeConnected ? (
         <Pressable testID="claudeRemoveKey" accessibilityRole="button" onPress={() => void removeClaudeKey()} style={styles.remove}>
           <Text style={[font.body, { color: theme.destructive }]}>Remove Anthropic API Key</Text>
