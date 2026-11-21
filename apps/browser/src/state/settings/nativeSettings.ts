@@ -19,12 +19,12 @@ const NATIVE_SETTINGS: Mirror[] = [
   mirror("popupsOpenAsTabs", setPopupsOpenAsTabs),
   mirror("blockAutoplayEverywhere", setBlockAutoplayEverywhere),
   mirror("pressMotion", setPressMotion),
+  mirror("commandScrollZoom", setCommandScrollZoom),
 ];
 
 export function startNativeSettings() {
   startInterfaceScale();
   void setThinScrollBars(false);
-  void setCommandScrollZoom(true);
   const sent = new Map<keyof Settings, unknown>();
   const sync = (settings: Settings) => {
     for (const { key, send } of NATIVE_SETTINGS) {
@@ -34,5 +34,5 @@ export function startNativeSettings() {
     }
   };
   sync(useBrowser.getState().settings);
-  return useBrowser.subscribe((s, prev) => s.settings !== prev.settings && sync(s.settings));
+  return useBrowser.subscribeTo(["settings"], (s, prev) => s.settings !== prev.settings && sync(s.settings));
 }

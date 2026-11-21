@@ -1,7 +1,7 @@
 {
   "about": "Ceilings for apps/browser/scripts/perf/ratchet.mjs (policy in its header and docs/perf/README.md). Lower them with `ratchet.mjs lower`; raise one only by hand, with the reason in the commit.",
   "baseline": {"commit":"dcd3ce1f","runs":8,"scenarios":["hover","idle","launch","openClose","pageLoad","scroll","small.launch","switchTabs","typing"],"when":"2026-10-06"},
-  "revisions": {"probe":"2","bench":"3"},
+  "revisions": {"probe":"2","bench":"4"},
   "exact": {
     "close.mounts.ArdiaContextMenuArea": 0,
     "close.mounts.ArdiaFileDrag": 0,
@@ -431,6 +431,7 @@
     "launch.writes.dev-console.log": 1,
     "launch.writes.dev-eval-result.json": 4,
     "launch.writes.release-notes.json": 1,
+    "nodeChurn.nativeNodesLeft": 0,
     "open.mounts.ArdiaActivitySpinner": 20,
     "open.mounts.ArdiaContextMenuArea": 20,
     "open.mounts.ArdiaFadeLabel": 20,

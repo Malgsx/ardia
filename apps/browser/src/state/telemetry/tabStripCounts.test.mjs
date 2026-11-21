@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { after, test } from "node:test";
+globalThis.__DEV__ = false;
+await import("../../test-native/index.ts");
+globalThis.fetch = async () => ({ status: 503 });
+const client = await import("./client.ts");
 import { noteTabLayoutSwitch } from "./tabLayoutCounts.ts";
 import {
+  noteTabStripCommandRefused,
   noteTabStripCompact,
+  noteTabStripReadable,
   noteTabStripEdgeScroll,
   noteTabStripGroupToggle,
   noteTabStripOverflow,
@@ -10,6 +16,7 @@ import {
   noteTabStripRevealAfterPress,
   noteTabStripRevealHeldForScroll,
   noteTabStripScrolled,
+  noteTabStripTabsInOverflow,
   noteTabStripTitledTabs,
   noteTextOnlyRow,
   takeTabStripCounts,
@@ -19,6 +26,7 @@ const ZERO = {
   tab_strip_group_toggles: 0,
   pinned_rows_made_text_only: 0,
   tab_strip_compact_layouts: 0,
+  tab_strip_readable_layouts: 0,
   tab_strip_edge_scroll_drags: 0,
   tab_strip_reveals_after_press: 0,
   tab_strip_most_tabs: 0,
@@ -33,7 +41,14 @@ const ZERO = {
   tab_layout_switches_to_sidebar: 0,
 };
 
+const sharing = (on) => {
+  client.loadChoice();
+  client.setSharing(on, "settings");
+};
+after(() => client.setSharing(false, "settings"));
+
 test("group collapses and expands from the strip are counted, and taking them starts over", () => {
+  sharing(true);
   noteTabStripGroupToggle();
   noteTabStripGroupToggle();
   noteTextOnlyRow();
@@ -43,13 +58,14 @@ test("group collapses and expands from the strip are counted, and taking them st
 
 test("compact layouts, edge-scrolled drags and reveals held for a press are counted, and the most tabs is a maximum, not a sum", () => {
   noteTabStripCompact();
+  noteTabStripReadable();
   noteTabStripEdgeScroll();
   noteTabStripEdgeScroll();
   noteTabStripRevealAfterPress();
   noteTabStripOverflow(40);
   noteTabStripOverflow(120);
   noteTabStripOverflow(60);
-  assert.deepEqual(takeTabStripCounts(), { ...ZERO, tab_strip_compact_layouts: 1, tab_strip_edge_scroll_drags: 2, tab_strip_reveals_after_press: 1, tab_strip_most_tabs: 120 });
+  assert.deepEqual(takeTabStripCounts(), { ...ZERO, tab_strip_compact_layouts: 1, tab_strip_readable_layouts: 1, tab_strip_edge_scroll_drags: 2, tab_strip_reveals_after_press: 1, tab_strip_most_tabs: 120 });
   assert.deepEqual(takeTabStripCounts(), ZERO);
 });
 
@@ -76,4 +92,39 @@ test("tab layout switches go out with the strip's counts, and taking them starts
   noteTabLayoutSwitch("sidebar");
   assert.deepEqual(takeTabStripCounts(), { ...ZERO, tab_layout_switches_to_top: 1, tab_layout_switches_to_sidebar: 2 });
   assert.deepEqual(takeTabStripCounts(), ZERO);
+});
+
+let clock = 1e9;
+const EVERY_FIELD = [
+  ["tab_strip_group_toggles", () => noteTabStripGroupToggle(), 1],
+  ["pinned_rows_made_text_only", () => noteTextOnlyRow(), 1],
+  ["tab_strip_compact_layouts", () => noteTabStripCompact(), 1],
+  ["tab_strip_readable_layouts", () => noteTabStripReadable(), 1],
+  ["tab_strip_edge_scroll_drags", () => noteTabStripEdgeScroll(), 1],
+  ["tab_strip_reveals_after_press", () => noteTabStripRevealAfterPress(), 1],
+  ["tab_strip_most_tabs", () => noteTabStripOverflow(40), 40],
+  ["tab_strip_held_closes", () => noteTabStripHeldClose(), 1],
+  ["tab_strip_most_titled_tabs", () => noteTabStripTitledTabs(6), 6],
+  ["tab_strip_most_tabs_in_overflow", () => noteTabStripTabsInOverflow(7), 7],
+  ["tab_strip_scrolls", () => noteTabStripScrolled((clock += 10_000)), 1],
+  ["tab_strip_scroll_stalls", () => (noteTabStripScrolled((clock += 10_000)), noteTabStripScrolled((clock += 100))), 1],
+  ["tab_strip_reveals_held_for_scroll", () => noteTabStripRevealHeldForScroll(), 1],
+  ["tab_strip_commands_refused", () => noteTabStripCommandRefused(), 1],
+];
+
+test("every tab strip count stays at zero while sharing is off, counts once sharing is on, and turning sharing off drops what was counted", () => {
+  sharing(true);
+  takeTabStripCounts();
+  for (const [field, note, counted] of EVERY_FIELD) {
+    sharing(false);
+    note();
+    assert.equal(takeTabStripCounts()[field], 0, `${field} counted with sharing off`);
+    sharing(true);
+    note();
+    assert.equal(takeTabStripCounts()[field], counted, `${field} with sharing on`);
+    note();
+    sharing(false);
+    sharing(true);
+    assert.equal(takeTabStripCounts()[field], 0, `${field} kept what was counted before sharing went off`);
+  }
 });

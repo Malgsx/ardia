@@ -1,7 +1,7 @@
 import { contributionsOf, CONTRIBUTIONS, type PluginManifest } from "../../lib/pluginManifest";
 import { activeManifest, usePlugins } from "../plugins/store";
 import type { ConsentToken } from "./choice";
-import { countFor } from "./countFor";
+import { consentOrNow, countFor } from "./countFor";
 
 const NONE = {
   plugin_enables: 0,
@@ -19,13 +19,15 @@ const NONE = {
   program_adoptions: 0,
   plugin_adoptions: 0,
   plugin_adoptions_waiting: 0,
+  plugin_removals: 0,
+  plugin_removals_cancelled: 0,
 };
 
 export type PluginCount = keyof typeof NONE;
 
 let counts = { ...NONE };
 
-export const notePlugin = (what: PluginCount, consent?: ConsentToken | null) => countFor(consent, () => void counts[what]++, { [what]: 1 });
+export const notePlugin = (what: PluginCount, consent?: ConsentToken | null) => countFor(consentOrNow(consent), () => void counts[what]++);
 
 export function takePluginCounts() {
   const taken = counts;
