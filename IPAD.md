@@ -29,7 +29,7 @@ The changes are in two commits: [`6bd42f9ce`](https://github.com/Malgsx/ardia/co
 
 | Date | Ardia version | Notes |
 | --- | --- | --- |
-| 21 Nov 2026 | **0.2.47** (latest release, [release notes](https://ardia.dev/release-notes/#0.2.47)) | Updated to the latest release. It merged cleanly with no conflicts and none of the files the fork changes were touched upstream. Rebuilt and installed on the iPad. |
+| 21 Nov 2026 | **0.2.47** (latest release, [release notes](https://ardia.dev/release-notes/#0.2.47)) | Updated to the latest release. It merged cleanly with no conflicts and none of the files the fork changes were touched upstream. Rebuilt and installed on the iPad over Wi-Fi. The build script now finds a device paired over Wi-Fi and no longer stalls on a Keychain prompt. |
 | 20 Nov 2026 | 0.2.47-nightly.9 | First build with the features above. |
 
 ## How it was built
@@ -132,6 +132,7 @@ Keep the device unlocked while the tests run.
 | "No Accounts" or "No profiles for …" | Sign in to Xcode › Settings › Accounts with your Apple ID. |
 | No device found | Use a data cable, unlock the device, tap Trust, and turn on Developer Mode. |
 | "Untrusted Developer" | Settings › General › VPN & Device Management › your Apple ID › Trust. |
+| The build sits at "Building" for a long time | Xcode is waiting on a hidden Keychain prompt for your github.com password. The script skips that with `-packageAuthorizationProvider netrc`; if you build in Xcode yourself, look for the prompt on the Mac and click Deny. |
 | Ardia won't open after a week | The free-team build expired. Run the script again. |
 | Too many App IDs | A free team can register only a few new bundle ids per week. Reuse the same `--bundle-prefix`. |
 | The Claude key won't save | The red message above the key field says why: a key that Anthropic rejected, no credits left, or no network. |

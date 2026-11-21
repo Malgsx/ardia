@@ -59,10 +59,10 @@ fi
 echo "Bundle id: $PREFIX (app), $PREFIX.share, $PREFIX.open, $PREFIX.widgets"
 
 if [ -z "$DEVICE" ] && [ "$SKIP_INSTALL" = 0 ]; then
-  DEVICES="$(xcrun devicectl list devices 2>/dev/null | awk '/ connected / && /physical/ && /(iPad|iPhone)/ { for (i = 1; i <= NF; i++) if ($i ~ /^[0-9A-F]{8}-[0-9A-F]{16}$/) print ($0 ~ /iPad/ ? "1" : "2"), $i }' | sort | cut -d' ' -f2)"
+  DEVICES="$(xcrun devicectl list devices 2>/dev/null | awk '/( connected |available \(paired\))/ && /physical/ && /(iPad|iPhone)/ { for (i = 1; i <= NF; i++) if ($i ~ /^[0-9A-F]{8}-[0-9A-F]{16}$/) print ($0 ~ / connected / ? 0 : 2) + ($0 ~ /iPad/ ? 1 : 2), $i }' | sort | cut -d' ' -f2)"
   DEVICE="$(printf '%s\n' "$DEVICES" | sed -n 1p)"
   [ "$(printf '%s\n' "$DEVICES" | grep -c .)" -gt 1 ] && echo "More than one device is connected; using $DEVICE. Pass --device <UDID> to choose."
-  [ -n "$DEVICE" ] || die "No iPad or iPhone is connected. Plug it in with a data cable, unlock it, tap Trust, and turn on Settings › Privacy & Security › Developer Mode."
+  [ -n "$DEVICE" ] || die "No iPad or iPhone is connected. Plug it in with a data cable (after that it also works over Wi-Fi), unlock it, tap Trust, and turn on Settings › Privacy & Security › Developer Mode."
 fi
 [ -n "$DEVICE" ] && echo "Device: $DEVICE"
 
@@ -84,7 +84,7 @@ DESTINATION="generic/platform=iOS"
 [ -n "$DEVICE" ] && DESTINATION="platform=iOS,id=$DEVICE"
 "$ROOT/scripts/agent/locked" xcodebuild -- xcodebuild -workspace "$IOS/Ardia.xcworkspace" -scheme Ardia -configuration Release \
   -destination "$DESTINATION" -derivedDataPath "$DERIVED" \
-  DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates build \
+  DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates -packageAuthorizationProvider netrc build \
   | grep -E '( error: |warning: Provisioning|BUILD (SUCCEEDED|FAILED))' || true
 APP="$DERIVED/Build/Products/Release-iphoneos/Ardia.app"
 [ -d "$APP" ] || die "The build didn't produce Ardia.app. Scroll up for the first error."
