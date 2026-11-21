@@ -1,7 +1,7 @@
 > [!NOTE]
 > **This is [@Malgsx](https://github.com/Malgsx)'s fork of [Ardia](https://github.com/ardia-browser/ardia), the browser made by the Ardia team.** It's a personal iPad build, not an official release.
 >
-> It adds Arc Search–style **Pinch to Summarize** (the page collapses into a card and the summary fills the screen), **ChatGPT and Claude** as summary writers on your own plan or API key, and **⌘T** on iPad, all on top of Ardia's nightly 0.2.47-nightly.9.
+> It adds Arc Search–style **Pinch to Summarize** (the page collapses into a card and the summary fills the screen), **ChatGPT and Claude** as summary writers on your own plan or API key, and **⌘T** on iPad, all on top of Ardia **0.2.47** (updated 21 Nov 2026 to the latest release).
 >
 > **[Build it for your own iPad →](IPAD.md)** One script, a free Apple ID, no paid developer account. The guide also covers how it was built and the tests that prove it works on a real iPad.
 >

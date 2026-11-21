@@ -1,6 +1,6 @@
 # Ardia on iPad: build it yourself
 
-This fork ([Malgsx/ardia](https://github.com/Malgsx/ardia)) is a personal iPad build of **[Ardia](https://github.com/ardia-browser/ardia)**, the open-source browser made by the Ardia team. Ardia, its design, its engine and nearly all of the code here are theirs. This fork adds a few Arc Search–style features on top of their nightly and documents how to put the result on your own iPad.
+This fork ([Malgsx/ardia](https://github.com/Malgsx/ardia)) is a personal iPad build of **[Ardia](https://github.com/ardia-browser/ardia)**, the open-source browser made by the Ardia team. Ardia, its design, its engine and nearly all of the code here are theirs. This fork adds a few Arc Search–style features on top of their latest release and documents how to put the result on your own iPad.
 
 It is **not an official Ardia release**, and nothing here is endorsed by the Ardia team. For the real thing, use [ardia.dev](https://ardia.dev) and the [Ardia repo](https://github.com/ardia-browser/ardia). If you want iPad support upstream, the place to say so is the Ardia team's own tracker ([#1230](https://github.com/ardia-browser/ardia/issues/1230)), following their [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -14,7 +14,7 @@ It is **not an official Ardia release**, and nothing here is endorsed by the Ard
 
 ## What this fork adds
 
-Everything else, including iPad support itself (full screen, the wide layout, the phone layout in narrow windows), comes from the Ardia team's work in [#2184](https://github.com/ardia-browser/ardia/pull/2184) and [#2376](https://github.com/ardia-browser/ardia/pull/2376). On top of Ardia's nightly **0.2.47-nightly.9**, this fork adds:
+Everything else, including iPad support itself (full screen, the wide layout, the phone layout in narrow windows), comes from the Ardia team's work in [#2184](https://github.com/ardia-browser/ardia/pull/2184) and [#2376](https://github.com/ardia-browser/ardia/pull/2376). On top of Ardia **0.2.47**, this fork adds:
 
 | Feature | What it does |
 | --- | --- |
@@ -25,16 +25,23 @@ Everything else, including iPad support itself (full screen, the wide layout, th
 
 The changes are in two commits: [`6bd42f9ce`](https://github.com/Malgsx/ardia/commit/6bd42f9ce) (the features) and [`05700ab9b`](https://github.com/Malgsx/ardia/commit/05700ab9b) (a fix so the Anthropic key saves). [PR #1](https://github.com/Malgsx/ardia/pull/1) has the full write-up.
 
+### Version history
+
+| Date | Ardia version | Notes |
+| --- | --- | --- |
+| 21 Nov 2026 | **0.2.47** (latest release, [release notes](https://ardia.dev/release-notes/#0.2.47)) | Updated to the latest release. It merged cleanly with no conflicts and none of the files the fork changes were touched upstream. Rebuilt and installed on the iPad. |
+| 20 Nov 2026 | 0.2.47-nightly.9 | First build with the features above. |
+
 ## How it was built
 
 [@Malgsx](https://github.com/Malgsx) directed the work and tested every step on a real iPad Pro 11" (2nd generation, iPadOS 27.3). The code was written with AI coding agents:
 
-- **[Claude Code](https://claude.com/claude-code)** (Anthropic's coding agent, running Claude Opus 5.5) wrote the nightly-based work in this fork: the features above, the build script, and the UI tests that drove the installed app on the iPad and captured screenshots as proof.
+- **[Claude Code](https://claude.com/claude-code)** (Anthropic's coding agent, running Claude Opus 5.5) wrote the work in this fork and keeps it updated to Ardia's latest version: the features above, the build script, and the UI tests that drove the installed app on the iPad and captured screenshots as proof.
 - **[Amp](https://ampcode.com)** helped with the earlier [`ipad-fills-screen`](https://github.com/Malgsx/ardia/tree/ipad-fills-screen) branch, which made the old native iOS app universal before the Ardia team moved the phones to Expo.
 
 The workflow, if you want to try something similar:
 
-1. Start from Ardia's latest nightly tag (`git fetch --tags`, then branch from `v0.2.47-nightly.N`).
+1. Start from Ardia's latest tag (`git fetch --tags`, then branch from a release like `v0.2.47` or a nightly like `v0.2.47-nightly.N`). To update later, merge the newer tag in.
 2. Read the Ardia team's docs first. [`AGENTS.md`](AGENTS.md) and [`docs/phone.md`](docs/phone.md) explain how the phone app is laid out and built.
 3. Make a change, build it, install it on the iPad, then check it on the device, not just in the simulator.
 4. Write a UI test that does what a person would (pinch, type, tap) and saves screenshots, so "it works" means something.
